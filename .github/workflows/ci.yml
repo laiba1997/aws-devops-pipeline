@@ -12,7 +12,7 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    steps:
+    s teps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -30,3 +30,33 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t aws-devops-app .
+
+
+  publish-to-ecr:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::343551558539:role/GitHubActionsECRPublisher
+          aws-region: us-east-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$REGISTRY/aws-devops-app:$IMAGE_TAG" .
+          docker push "$REGISTRY/aws-devops-app:$IMAGE_TAG"
