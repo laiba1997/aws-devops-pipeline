@@ -31,3 +31,7 @@ override.tf.json
 # IDE
 .vscode/
 .idea/
+
+terraform-state-backup.json
+
+cleanup.tfplan
